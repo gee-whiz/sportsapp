@@ -2,6 +2,10 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const mongoose = require('mongoose');
+const fs = require('fs');
+const path = require('path');
+const yaml = require('js-yaml');
+const swaggerUi = require('swagger-ui-express');
 const playerRoutes = require('./src/routes/playerRoutes');
 const connectDB = require('./src/config/db');
 
@@ -10,6 +14,11 @@ const port = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+const openapiSpec = yaml.load(
+  fs.readFileSync(path.join(__dirname, 'openapi.yaml'), 'utf8')
+);
+app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
 
 app.use('/v1/players', playerRoutes);
 
