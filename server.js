@@ -5,7 +5,6 @@ const mongoose = require('mongoose');
 const fs = require('fs');
 const path = require('path');
 const yaml = require('js-yaml');
-const swaggerUi = require('swagger-ui-express');
 const playerRoutes = require('./src/routes/playerRoutes');
 const connectDB = require('./src/config/db');
 
@@ -18,7 +17,34 @@ app.use(express.json());
 const openapiSpec = yaml.load(
   fs.readFileSync(path.join(__dirname, 'openapi.yaml'), 'utf8')
 );
-app.use('/docs', swaggerUi.serve, swaggerUi.setup(openapiSpec));
+
+// Serve OpenAPI as JSON for client tools.
+app.get('/openapi.json', (req, res) => {
+  res.json(openapiSpec);
+});
+
+// Lightweight Swagger UI page using CDN assets to avoid bundle issues on Vercel.
+app.get('/docs', (req, res) => {
+  res.type('html').send(`<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui.css">
+  </head>
+  <body>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5.11.0/swagger-ui-bundle.js"></script>
+    <script>
+      window.onload = () => {
+        SwaggerUIBundle({
+          url: '/openapi.json',
+          dom_id: '#swagger-ui',
+          presets: [SwaggerUIBundle.presets.apis],
+        });
+      };
+    </script>
+  </body>
+</html>`);
+});
 
 app.use('/v1/players', playerRoutes);
 
